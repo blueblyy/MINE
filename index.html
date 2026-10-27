@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS System - MINE AU</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; user-select: none; }
+        body { background: #0f111a; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; overflow: hidden; }
+        
+        /* Frame iPhone */
+        .iphone-container {
+            width: 375px; height: 780px; background: #000; border-radius: 50px;
+            border: 4px solid #333; position: relative; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 20px rgba(186, 12, 47, 0.3);
+        }
+        
+        /* Dynamic Island / Notch */
+        .notch {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 110px; height: 30px; background: #000; border-radius: 20px; z-index: 1000;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+        }
+        .notch-camera { width: 12px; height: 12px; background: #111; border-radius: 50%; border: 1px solid #222; }
+
+        /* Status Bar */
+        .status-bar {
+            position: absolute; top: 0; width: 100%; height: 45px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 25px 0 25px; font-size: 13px; font-weight: 600; z-index: 999;
+        }
+
+        /* Wallpaper Overlay */
+        .phone-screen {
+            width: 100%; height: 100%; background-size: cover; background-position: center;
+            transition: background 0.3s ease; position: relative;
+        }
+
+        /* Homescreen Grid */
+        .homescreen {
+            padding: 70px 20px 20px 20px; display: grid;
+            grid-template-columns: repeat(4, 1fr); gap: 20px 15px;
+        }
+        .app-icon {
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
+        }
+        .icon-box {
+            width: 60px; height: 60px; border-radius: 15px; display: flex;
+            justify-content: center; align-items: center; font-size: 28px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        .icon-box:active { transform: scale(0.9); }
+        .app-name { font-size: 11px; margin-top: 5px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+
+        /* Window App Layer */
+        .app-window {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1c1c1e; z-index: 500; display: none; flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .app-header {
+            height: 80px; background: #2c2c2e; padding: 40px 15px 10px 15px;
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3a3a3c;
+        }
+        .app-title { font-size: 17px; font-weight: 600; }
+        .btn-back { color: #0a84ff; font-size: 15px; cursor: pointer; background: none; border: none; }
+
+        .app-content { flex: 1; overflow-y: auto; padding: 15px; }
+
+        /* Home Bar Bottom */
+        .home-bar {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            width: 130px; height: 5px; background: #fff; border-radius: 3px; z-index: 9999; cursor: pointer;
+        }
+
+        /* Styling Galeri & Upload */
+        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .gallery-item { width: 100%; height: 100px; background-size: cover; background-position: center; border-radius: 8px; position: relative; cursor: pointer; }
+        .upload-btn {
+            background: #0a84ff; color: #fff; padding: 10px; border-radius: 10px; text-align: center;
+            margin-bottom: 15px; cursor: pointer; font-weight: 600; font-size: 14px;
+        }
+        
+        /* Chat UI */
+        .contact-list-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+            border-bottom: 1px solid #2c2c2e; cursor: pointer;
+        }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background: #48484a; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .chat-bubble-user { background: #0b93f6; color: #fff; align-self: flex-end; padding: 8px 12px; border-radius: 15px 15px 0 15px; margin-bottom: 8px; max-width: 80%; }
+        .chat-bubble-them { background: #3a3a3c; color: #fff; align-self: flex-start; padding: 8px 12px; border-radius: 15px 15px 15px 0; margin-bottom: 8px; max-width: 80%; }
+        .chat-input-box { display: flex; gap: 8px; padding: 10px; background: #2c2c2e; }
+        .chat-input-box input { flex: 1; padding: 8px 12px; border-radius: 20px; border: none; background: #1c1c1e; color: #fff; outline: none; }
+        .chat-input-box button { background: #0a84ff; border: none; color: #fff; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="iphone-container">
+    <!-- Dynamic Island -->
+    <div class="notch"><div class="notch-camera"></div></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span id="clock">19:42</span>
+        <span>􀛨 100%</span>
+    </div>
+
+    <!-- Screen Area -->
+    <div class="phone-screen" id="phoneScreen" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600');">
+        
+        <!-- Homescreen Grid -->
+        <div class="homescreen">
+            <div class="app-icon" onclick="openApp('app-chat')">
+                <div class="icon-box" style="background: #34c759;">💬</div>
+                <div class="app-name">Pesan</div>
+            </div>
+            <div class="app-icon" onclick="openApp('app-gallery')">
+                <div class="icon-box" style="background: #fff;">🖼️</div>
+                <div class="app-name">Galeri</div>
+            </div>
+            <div class="app-icon" onclick="openApp('app-ig')">
+                <div class="icon-box" style="background: linear-gradient(45deg, #f09433, #bc1888);">📸</div>
+                <div class="app-name">Instagram</div>
+            </div>
+            <div class="app-icon" onclick="openApp('app-x')">
+                <div class="icon-box" style="background: #000; border: 1px solid #333;">𝕏</div>
+                <div class="app-name">X</div>
+            </div>
+            <div class="app-icon" onclick="openApp('app-security')">
+                <div class="icon-box" style="background: #ff3b30;">🔒</div>
+                <div class="app-name">MINE Lock</div>
+            </div>
+        </div>
+
+        <!-- APP: GALERI (With Import & Wallpaper Changer) -->
+        <div class="app-window" id="app-gallery">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-gallery')">❮ Kembali</button>
+                <div class="app-title">Foto & Galeri</div>
+                <div></div>
+            </div>
+            <div class="app-content">
+                <label class="upload-btn">
+                    + Unggah Foto dari HP
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="importImage(event)">
+                </label>
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Default Photos -->
+                    <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600');" onclick="setWallpaper('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600')"></div>
+                    <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600');" onclick="setWallpaper('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600')"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- APP: PESAN (Multi Contact Chat) -->
+        <div class="app-window" id="app-chat">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-chat')">❮ Kontak</button>
+                <div class="app-title" id="chatTitle">Pesan</div>
+                <div></div>
+            </div>
+            <div class="app-content" id="chatListArea">
+                <div class="contact-list-item" onclick="openChatRoom('Gala ❤️', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200')">
+                    <div class="avatar">🔒</div>
+                    <div>
+                        <div style="font-weight: 600;">Gala ❤️</div>
+                        <div style="font-size: 12px; color: #8e8e93;">"Di luar dingin. Pulang."</div>
+                    </div>
+                </div>
+                <div class="contact-list-item" onclick="openChatRoom('Sahabat (Karin)', '')">
+                    <div class="avatar">👭</div>
+                    <div>
+                        <div style="font-weight: 600;">Karin</div>
+                        <div style="font-size: 12px; color: #8e8e93;">"Ra, lu aman kan di rumah?"</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Chat Room Area -->
+            <div id="chatRoomArea" style="display: none; height: 100%; flex-direction: column;">
+                <div class="app-content" id="messagesContainer" style="display: flex; flex-direction: column;"></div>
+                <div class="chat-input-box">
+                    <input type="text" id="chatInput" placeholder="Ketik pesan...">
+                    <button onclick="sendMessage()">Kirim</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- APP: MINE LOCK (Security Status) -->
+        <div class="app-window" id="app-security">
+            <div class="app-header">
+                <button class="btn-back" onclick="closeApp('app-security')">❮ Back</button>
+                <div class="app-title">System Status</div>
+                <div></div>
+            </div>
+            <div class="app-content" style="text-align: center; padding-top: 40px;">
+                <div style="font-size: 50px; margin-bottom: 10px;">🔒</div>
+                <h3>STATUS: LOCKED BY GALA</h3>
+                <p style="color: #8e8e93; font-size: 13px; margin-top: 10px;">Smart lock active. GPS tracking sync 100%.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Home Bar Button -->
+    <div class="home-bar" onclick="goHome()"></div>
+</div>
+
+<script>
+    // Update Clock
+    function updateClock() {
+        const now = new Date();
+        const hrs = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('clock').innerText = `${hrs}:${mins}`;
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    // App Navigation
+    function openApp(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeApp(id) { document.getElementById(id).style.display = 'none'; }
+    function goHome() {
+        document.querySelectorAll('.app-window').forEach(app => app.style.display = 'none');
+        document.getElementById('chatListArea').style.display = 'block';
+        document.getElementById('chatRoomArea').style.display = 'none';
+    }
+
+    // Import Image to Gallery
+    function importImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgUrl = e.target.result;
+                const grid = document.getElementById('galleryGrid');
+                const newItem = document.createElement('div');
+                newItem.className = 'gallery-item';
+                newItem.style.backgroundImage = `url('${imgUrl}')`;
+                newItem.onclick = function() { setWallpaper(imgUrl); };
+                grid.prepend(newItem);
+                alert("Foto berhasil ditambahkan! Klik foto untuk menjadikannya Wallpaper.");
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Set Wallpaper
+    function setWallpaper(url) {
+        document.getElementById('phoneScreen').style.backgroundImage = `url('${url}')`;
+        alert("Wallpaper iPhone berhasil diubah!");
+    }
+
+    // Chat System
+    let activeContact = "";
+    function openChatRoom(name) {
+        activeContact = name;
+        document.getElementById('chatTitle').innerText = name;
+        document.getElementById('chatListArea').style.display = 'none';
+        document.getElementById('chatRoomArea').style.display = 'flex';
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if(!text) return;
+        
+        const container = document.getElementById('messagesContainer');
+        const msg = document.createElement('div');
+        msg.className = 'chat-bubble-user';
+        msg.innerText = text;
+        container.appendChild(msg);
+        input.value = "";
+        container.scrollTop = container.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
